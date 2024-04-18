@@ -1,14 +1,10 @@
 package webdav
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/emersion/go-webdav"
-)
-
-var (
-	username string //认证账号
-	password string //认证密码
 )
 
 type httpClient struct {
@@ -25,6 +21,14 @@ func CreateClient(c webdav.HTTPClient, endpoint string) (*webdav.Client, error) 
 	return webdav.NewClient(c, endpoint)
 }
 
-func CreatHttpClientWithAuth(webHC webdav.HTTPClient) webdav.HTTPClient {
-	return webdav.HTTPClientWithBasicAuth(webHC, username, password)
+func CreatHttpClientWithAuth(webHC webdav.HTTPClient, usr, pwd string) webdav.HTTPClient {
+	return webdav.HTTPClientWithBasicAuth(webHC, usr, pwd)
+}
+
+func InitClient(webHC webdav.HTTPClient, endpoint string, usr, pwd string) *webdav.Client {
+	c, err := CreateClient(CreatHttpClientWithAuth(webHC, usr, pwd), endpoint)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return c
 }
