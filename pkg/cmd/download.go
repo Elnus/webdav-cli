@@ -8,7 +8,7 @@ import (
 
 var downloadCmd = &cobra.Command{
 	Use:   "download",
-	Short: "download file from webdav",
+	Short: "Download file from webdav",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("is download")

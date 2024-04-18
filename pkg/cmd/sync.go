@@ -6,15 +6,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var uploadCmd = &cobra.Command{
-	Use:   "upload",
-	Short: "Upload file to webdav",
+var syncCmd = &cobra.Command{
+	Use:   "sync",
+	Short: "Sync localDir and RemoteDir",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("is upload")
+		fmt.Println("is sync")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(uploadCmd)
+	rootCmd.AddCommand(syncCmd)
 }
