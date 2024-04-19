@@ -13,23 +13,23 @@ var listCmd = &cobra.Command{
 	Short: "list files from directory",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
-		remoteDir := checkStringFlags(cmd, "remote-dir")
-		ignore := checkBoolFlags(cmd, "ignore-samename-file")
-		res, err := Client.ReadDir(context.Background(), remoteDir, ignore)
+		ctx, cancel := context.WithTimeout(context.Background(), checkCountFlags(cmd, "timeout"))
+		defer cancel()
+
+		res, err := Client.ReadDir(ctx, checkStringFlags(cmd, "remote-dir"), checkBoolFlags(cmd, "recursive"))
 		if err != nil {
-			log.Panicln(err)
-			return
+			log.Fatal(err)
 		}
+		fmt.Println("----------------------------")
 		for _, v := range res {
-			fmt.Println("----------------------------")
 			fmt.Printf("Path:%s  |  ", v.Path)
 			fmt.Printf("ModTime:%v  |  ", v.ModTime)
 			fmt.Printf("IsDir:%v\n", v.IsDir)
+			fmt.Println("----------------------------")
 		}
 	},
 }
 
 func init() {
-	listCmd.Flags().Bool("recursive", false, "Recursively list all directory files")
 	rootCmd.AddCommand(listCmd)
 }
