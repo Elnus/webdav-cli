@@ -3,6 +3,7 @@ package cmd
 import (
 	"log"
 	"net/http"
+	"time"
 	wb "webdav-cli/pkg/webdav"
 
 	"github.com/emersion/go-webdav"
@@ -42,8 +43,10 @@ func Exec() {
 	rootCmd.PersistentFlags().StringVarP(&vars.remoteDir, "remote-dir", "r", "", "remote server sync directory")
 	rootCmd.PersistentFlags().StringVarP(&vars.config, "config-file", "c", "", "read config from yaml file")
 	rootCmd.PersistentFlags().StringVarP(&vars.username, "username", "u", "", "username of logon webdav server")
-	rootCmd.PersistentFlags().StringVarP(&vars.password, "password", "p", "", "username of logon webdav server")
+	rootCmd.PersistentFlags().StringVarP(&vars.password, "password", "p", "", "password of logon webdav server")
+	rootCmd.PersistentFlags().DurationP("timeout", "t", 30*time.Second, "timeout in seconds")
 	rootCmd.PersistentFlags().Bool("ignore-samename-file", false, "ignore the files with the same name between localdir and remotedir")
+	listCmd.PersistentFlags().Bool("recursive", false, "recursively all directory files")
 	err := rootCmd.Execute()
 	if err != nil {
 		log.Fatal(err)
@@ -54,7 +57,7 @@ func Exec() {
 func checkStringFlags(cmd *cobra.Command, arg string) string {
 	res, err := cmd.Flags().GetString(arg)
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 		return ""
 	}
 	return res
@@ -63,8 +66,16 @@ func checkStringFlags(cmd *cobra.Command, arg string) string {
 func checkBoolFlags(cmd *cobra.Command, arg string) bool {
 	res, err := cmd.Flags().GetBool(arg)
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 		return false
+	}
+	return res
+}
+
+func checkCountFlags(cmd *cobra.Command, arg string) time.Duration {
+	res, err := cmd.Flags().GetDuration(arg)
+	if err != nil {
+		log.Fatal(err)
 	}
 	return res
 }
