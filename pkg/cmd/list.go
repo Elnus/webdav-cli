@@ -13,13 +13,14 @@ var listCmd = &cobra.Command{
 	Short: "list files from directory",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := context.WithTimeout(context.Background(), checkCountFlags(cmd, "timeout"))
+		ctx, cancel := context.WithTimeout(context.Background(), vars.timeout)
 		defer cancel()
 
-		res, err := Client.ReadDir(ctx, checkStringFlags(cmd, "remote-dir"), checkBoolFlags(cmd, "recursive"))
+		res, err := vars.Client.ReadDir(ctx, vars.remoteDir, vars.recursive)
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		fmt.Println("----------------------------")
 		for _, v := range res {
 			fmt.Printf("Path:%s  |  ", v.Path)

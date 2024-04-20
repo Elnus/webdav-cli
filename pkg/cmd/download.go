@@ -14,17 +14,15 @@ var downloadCmd = &cobra.Command{
 	Short: "Download file from webdav",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
-		remoteDir := checkStringFlags(cmd, "remote-dir")
-		localDir := checkStringFlags(cmd, "local-dir")
-		ctx, cancel := context.WithTimeout(context.Background(), checkCountFlags(cmd, "timeout"))
+		ctx, cancel := context.WithTimeout(context.Background(), vars.timeout)
 		defer cancel()
 
-		res, err := Client.ReadDir(ctx, remoteDir, checkBoolFlags(cmd, "recursive"))
+		res, err := vars.Client.ReadDir(ctx, vars.remoteDir, vars.recursive)
 		if err != nil {
 			log.Fatal(err)
 		}
 		for _, v := range res {
-			path := fmt.Sprintf("%s%s", localDir, v.Path)
+			path := fmt.Sprintf("%s%s", vars.localDir, v.Path)
 			switch v.IsDir {
 			case true:
 				if checkIsNotExist(path) {
@@ -33,7 +31,7 @@ var downloadCmd = &cobra.Command{
 					}
 				}
 			case false:
-				if checkIsNotExist(path) || checkBoolFlags(cmd, "overwrite") {
+				if checkIsNotExist(path) || vars.overwrite {
 					downloadFile(ctx, path, v.Path)
 				}
 			}

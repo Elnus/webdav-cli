@@ -13,40 +13,39 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	Client *webdav.Client
-)
+type globalVar struct {
+	Client                                        *webdav.Client
+	usr, pwd, server, remoteDir, localDir, config string
+	overwrite, recursive                          bool
+	timeout                                       time.Duration
+}
+
+var vars globalVar
 
 var rootCmd = &cobra.Command{
 	Use:   "webdav-cli",
 	Short: "",
 	Long:  "webdav-cli is a cli tools to sync to webdav server",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		usr := checkStringFlags(cmd, "username")
-		pwd := checkStringFlags(cmd, "password")
-		ep := checkStringFlags(cmd, "server")
-		Client = wb.InitClient(&http.Client{}, ep, usr, pwd)
+		vars.usr = checkStringFlags(cmd, "username")
+		vars.pwd = checkStringFlags(cmd, "password")
+		vars.server = checkStringFlags(cmd, "server")
+		vars.remoteDir = checkStringFlags(cmd, "remote-dir")
+		vars.localDir = checkStringFlags(cmd, "local-dir")
+		vars.overwrite = checkBoolFlags(cmd, "overwrite")
+		vars.recursive = checkBoolFlags(cmd, "recursive")
+		vars.timeout = checkCountFlags(cmd, "timeout")
+		vars.Client = wb.InitClient(&http.Client{}, vars.server, vars.usr, vars.pwd)
 	},
 }
-
-type globalVar struct {
-	server    string
-	localDir  string
-	remoteDir string
-	config    string
-	username  string
-	password  string
-}
-
-var vars globalVar
 
 func Exec() {
 	rootCmd.PersistentFlags().StringVarP(&vars.server, "server", "s", "", "webdav host ip")
 	rootCmd.PersistentFlags().StringVarP(&vars.localDir, "local-dir", "l", "", "local directories that need to be synchronized")
 	rootCmd.PersistentFlags().StringVarP(&vars.remoteDir, "remote-dir", "r", "", "remote server sync directory")
 	rootCmd.PersistentFlags().StringVarP(&vars.config, "config-file", "c", "", "read config from yaml file")
-	rootCmd.PersistentFlags().StringVarP(&vars.username, "username", "u", "", "username of logon webdav server")
-	rootCmd.PersistentFlags().StringVarP(&vars.password, "password", "p", "", "password of logon webdav server")
+	rootCmd.PersistentFlags().StringVarP(&vars.usr, "username", "u", "", "username of logon webdav server")
+	rootCmd.PersistentFlags().StringVarP(&vars.pwd, "password", "p", "", "password of logon webdav server")
 	rootCmd.PersistentFlags().DurationP("timeout", "t", 30*time.Second, "timeout in seconds")
 	rootCmd.PersistentFlags().Bool("overwrite", false, "ignore the files with the same name between localdir and remotedir")
 	rootCmd.PersistentFlags().Bool("recursive", false, "recursively all directory files")
@@ -89,7 +88,7 @@ func checkIsNotExist(name string) bool {
 }
 
 func downloadFile(ctx context.Context, path, name string) {
-	file, err := Client.Open(ctx, name)
+	file, err := vars.Client.Open(ctx, name)
 	if err != nil {
 		log.Fatal(err)
 	}
