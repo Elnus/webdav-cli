@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"context"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 	wb "webdav-cli/pkg/webdav"
 
@@ -45,8 +48,8 @@ func Exec() {
 	rootCmd.PersistentFlags().StringVarP(&vars.username, "username", "u", "", "username of logon webdav server")
 	rootCmd.PersistentFlags().StringVarP(&vars.password, "password", "p", "", "password of logon webdav server")
 	rootCmd.PersistentFlags().DurationP("timeout", "t", 30*time.Second, "timeout in seconds")
-	rootCmd.PersistentFlags().Bool("ignore-samename-file", false, "ignore the files with the same name between localdir and remotedir")
-	listCmd.PersistentFlags().Bool("recursive", false, "recursively all directory files")
+	rootCmd.PersistentFlags().Bool("overwrite", false, "ignore the files with the same name between localdir and remotedir")
+	rootCmd.PersistentFlags().Bool("recursive", false, "recursively all directory files")
 	err := rootCmd.Execute()
 	if err != nil {
 		log.Fatal(err)
@@ -78,4 +81,29 @@ func checkCountFlags(cmd *cobra.Command, arg string) time.Duration {
 		log.Fatal(err)
 	}
 	return res
+}
+
+func checkIsNotExist(name string) bool {
+	_, err := os.Stat(name)
+	return os.IsNotExist(err)
+}
+
+func downloadFile(ctx context.Context, path, name string) {
+	file, err := Client.Open(ctx, name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	data, err := io.ReadAll(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	osFile, err := os.Create(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = osFile.Write(data)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
