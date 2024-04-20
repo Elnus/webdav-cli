@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -41,4 +42,24 @@ var downloadCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(downloadCmd)
+}
+
+func downloadFile(ctx context.Context, path, name string) {
+	file, err := vars.Client.Open(ctx, name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	data, err := io.ReadAll(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	osFile, err := os.Create(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = osFile.Write(data)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

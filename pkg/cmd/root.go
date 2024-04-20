@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -85,24 +83,4 @@ func checkCountFlags(cmd *cobra.Command, arg string) time.Duration {
 func checkIsNotExist(name string) bool {
 	_, err := os.Stat(name)
 	return os.IsNotExist(err)
-}
-
-func downloadFile(ctx context.Context, path, name string) {
-	file, err := vars.Client.Open(ctx, name)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	data, err := io.ReadAll(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	osFile, err := os.Create(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = osFile.Write(data)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
