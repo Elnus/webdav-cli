@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/emersion/go-webdav"
 	"github.com/spf13/cobra"
@@ -25,7 +26,13 @@ var uploadCmd = &cobra.Command{
 		for _, v := range items {
 			switch v.IsDir {
 			case true:
-				fmt.Println("this is a fold")
+				path := splitStr(vars.localDir)
+				fmt.Println(path)
+				//fmt.Println("this is a fold")
+				err := vars.Client.Mkdir(ctx, ("/" + path + "/"))
+				if err != nil {
+					log.Fatal(err)
+				}
 			case false:
 				localFile, err := webdav.LocalFileSystem("/").Open(ctx, v.Path)
 				if err != nil {
@@ -52,4 +59,9 @@ var uploadCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(uploadCmd)
+}
+
+func splitStr(path string) string {
+	str := strings.Split(path, "/")
+	return str[len(str)-2]
 }
