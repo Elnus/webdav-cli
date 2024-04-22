@@ -18,7 +18,7 @@ var downloadCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), vars.timeout)
 		defer cancel()
 
-		res := NewReadDir(ctx, vars.Client, vars.remoteDir, vars.recursive)
+		res := newReadDir(ctx, vars.Client, vars.remoteDir, vars.recursive)
 		for _, v := range res {
 			path := fmt.Sprintf("%s%s", vars.localDir, v.Path)
 			switch v.IsDir {
@@ -62,7 +62,7 @@ func downloadFile(ctx context.Context, path, name string) {
 	defer osFile.Close()
 }
 
-func NewReadDir(ctx context.Context, c *webdav.Client, path string, recurse bool) []webdav.FileInfo {
+func newReadDir(ctx context.Context, c *webdav.Client, path string, recurse bool) []webdav.FileInfo {
 	var res []webdav.FileInfo
 	items, err := c.ReadDir(ctx, path, false)
 	if err != nil {
@@ -76,7 +76,7 @@ func NewReadDir(ctx context.Context, c *webdav.Client, path string, recurse bool
 			}
 			if v.IsDir && v.Path != path {
 				res = append(res, v)
-				res = append(res, NewReadDir(ctx, c, v.Path, recurse)...)
+				res = append(res, newReadDir(ctx, c, v.Path, recurse)...)
 			}
 		}
 		return res
