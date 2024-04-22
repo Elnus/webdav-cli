@@ -17,18 +17,8 @@ var downloadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithTimeout(context.Background(), vars.timeout)
 		defer cancel()
-		var res []webdav.FileInfo
-		switch vars.recursive {
-		case true:
-			res = RecurseReadAndMkdir(ctx, vars.Client, vars.remoteDir, res)
-		case false:
-			f, err := vars.Client.ReadDir(ctx, vars.remoteDir, vars.recursive)
-			res = f
-			if err != nil {
-				log.Fatal(fmt.Errorf("read remote dir err:%w", err))
-			}
-		}
 
+		res := NewReadDir(ctx, vars.Client, vars.remoteDir, vars.recursive)
 		for _, v := range res {
 			path := fmt.Sprintf("%s%s", vars.localDir, v.Path)
 			switch v.IsDir {
@@ -61,7 +51,6 @@ func downloadFile(ctx context.Context, path, name string) {
 	if err != nil {
 		log.Fatal(fmt.Errorf("read remote file err:%w", err))
 	}
-	fmt.Println("path", path)
 	osFile, err := webdav.LocalFileSystem("/").Create(ctx, path)
 	if err != nil {
 		log.Fatal(fmt.Errorf("create local file err:%w", err))
@@ -73,19 +62,24 @@ func downloadFile(ctx context.Context, path, name string) {
 	defer osFile.Close()
 }
 
-func RecurseReadAndMkdir(ctx context.Context, c *webdav.Client, path string, res []webdav.FileInfo) []webdav.FileInfo {
-	f, err := c.ReadDir(ctx, path, false)
+func NewReadDir(ctx context.Context, c *webdav.Client, path string, recurse bool) []webdav.FileInfo {
+	var res []webdav.FileInfo
+	items, err := c.ReadDir(ctx, path, false)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, v := range f {
-		if v.IsDir && v.Path != path {
-			res = append(res, v)
-			RecurseReadAndMkdir(ctx, c, v.Path, res)
-			continue
+	if recurse {
+		for _, v := range items {
+			if !v.IsDir {
+				res = append(res, v)
+				continue
+			}
+			if v.IsDir && v.Path != path {
+				res = append(res, v)
+				res = append(res, NewReadDir(ctx, c, v.Path, recurse)...)
+			}
 		}
-		res = append(res, v)
+		return res
 	}
-	fmt.Println(res)
-	return res
+	return items
 }
