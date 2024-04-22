@@ -27,6 +27,9 @@ var syncCmd = &cobra.Command{
 		ltMap := make(map[string]struct{})
 		for _, v := range localItems {
 			p := strings.Replace(v.Path, vars.localDir, "/", 1)
+			if v.IsDir {
+				p = p + "/"
+			}
 			ltMap[p] = struct{}{}
 		}
 		fmt.Printf("lt文件：%s\n", ltMap)
