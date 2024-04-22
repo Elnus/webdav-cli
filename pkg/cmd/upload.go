@@ -23,35 +23,23 @@ var uploadCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+		basePath := vars.remoteDir + splitStr(vars.localDir)
 		for _, v := range items {
+			_, subPath, _ := strings.Cut(v.Path, splitStr(basePath))
 			switch v.IsDir {
 			case true:
-				path := splitStr(vars.localDir)
-				fmt.Println(path)
-				//fmt.Println("this is a fold")
-				err := vars.Client.Mkdir(ctx, ("/" + path + "/"))
-				if err != nil {
-					log.Fatal(err)
+				dirPath := basePath + subPath + "/"
+				if !checkRemoteIsNotExist(ctx, dirPath) {
+					continue
+				}
+				if err := vars.Client.Mkdir(ctx, dirPath); err != nil {
+					log.Fatal(fmt.Errorf("make remote dir err:%s", err))
 				}
 			case false:
-				localFile, err := webdav.LocalFileSystem("/").Open(ctx, v.Path)
-				if err != nil {
-					log.Fatal(err)
+				filePath := basePath + subPath
+				if checkRemoteIsNotExist(ctx, filePath) || vars.overwrite {
+					uploadFile(ctx, filePath, v.Path)
 				}
-				data, err := io.ReadAll(localFile)
-				if err != nil {
-					log.Fatal(err)
-				}
-				_, err = vars.Client.Stat(ctx, v.Path)
-				if err != nil {
-					log.Fatal(err)
-				}
-				r, err := vars.Client.Create(ctx, v.Path)
-				if err != nil {
-					log.Fatal(err)
-				}
-				defer r.Close()
-				r.Write(data)
 			}
 		}
 	},
@@ -62,6 +50,29 @@ func init() {
 }
 
 func splitStr(path string) string {
+	if !strings.HasSuffix(path, "/") {
+		path = path + "/"
+	}
 	str := strings.Split(path, "/")
 	return str[len(str)-2]
+}
+
+func uploadFile(ctx context.Context, path, name string) {
+	localFile, err := webdav.LocalFileSystem("/").Open(ctx, name)
+	if err != nil {
+		log.Fatal(fmt.Errorf("open local file err:%w", err))
+	}
+	data, err := io.ReadAll(localFile)
+	if err != nil {
+		log.Fatal(fmt.Errorf("read local file err:%w", err))
+	}
+	r, err := vars.Client.Create(ctx, path)
+	if err != nil {
+		log.Fatal(fmt.Errorf("create remote file err:%w", err))
+	}
+	_, err = r.Write(data)
+	if err != nil {
+		log.Fatal(fmt.Errorf("write remote file err:%w", err))
+	}
+	defer r.Close()
 }
