@@ -1,9 +1,10 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 	wb "webdav-cli/pkg/webdav"
 
@@ -80,7 +81,18 @@ func checkCountFlags(cmd *cobra.Command, arg string) time.Duration {
 	return res
 }
 
-func checkIsNotExist(name string) bool {
-	_, err := os.Stat(name)
-	return os.IsNotExist(err)
+func checkLocalIsNotExist(ctx context.Context, name string) bool {
+	if _, err := webdav.LocalFileSystem("/").Stat(ctx, name); err != nil {
+		log.Println(fmt.Errorf("local stat:%w", err))
+		return true
+	}
+	return false
+}
+
+func checkRemoteIsNotExist(ctx context.Context, name string) bool {
+	if _, err := vars.Client.Stat(ctx, name); err != nil {
+		log.Println(fmt.Errorf("remote stat:%w", err))
+		return true
+	}
+	return false
 }
