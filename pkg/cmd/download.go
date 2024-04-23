@@ -28,22 +28,22 @@ func init() {
 func downloadFunc(ctx context.Context, ld, rd string) {
 	res := newReadDir(ctx, vars.Client, rd, vars.recursive)
 	for _, v := range res {
-		path := fmt.Sprintf("%s%s", ld, v.Path)
+		lItemPath := fmt.Sprintf("%s%s", ld, v.Path)
 		switch v.IsDir {
 		case true:
-			if checkLocalIsNotExist(ctx, path) {
-				makeLocalDir(ctx, path)
+			if checkLocalIsNotExist(ctx, lItemPath) {
+				makeLocalDir(ctx, lItemPath)
 			}
 		case false:
-			if checkLocalIsNotExist(ctx, path) || vars.overwrite {
-				downloadFile(ctx, path, v.Path)
+			if checkLocalIsNotExist(ctx, lItemPath) || vars.overwrite {
+				downloadFile(ctx, lItemPath, v.Path)
 			}
 		}
 	}
 }
 
-func downloadFile(ctx context.Context, path, name string) {
-	file, err := vars.Client.Open(ctx, name)
+func downloadFile(ctx context.Context, lItemPath, rItemPath string) {
+	file, err := vars.Client.Open(ctx, rItemPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("DownLoad:Open Remote File Err:%w", err))
 	}
@@ -52,7 +52,7 @@ func downloadFile(ctx context.Context, path, name string) {
 	if err != nil {
 		log.Fatal(fmt.Errorf("DownLoad:Read Remote File Err:%w", err))
 	}
-	osFile, err := webdav.LocalFileSystem("/").Create(ctx, path)
+	osFile, err := webdav.LocalFileSystem("/").Create(ctx, lItemPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("DownLoad:Create local File Err:%w", err))
 	}
