@@ -18,7 +18,7 @@ var listCmd = &cobra.Command{
 
 		res, err := vars.Client.ReadDir(ctx, vars.remoteDir, vars.recursive)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(fmt.Errorf("List:List Remote Item Err:%w", err))
 		}
 
 		fmt.Println("----------------------------")

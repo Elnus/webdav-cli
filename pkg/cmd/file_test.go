@@ -1,13 +1,14 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
+	"context"
+	"net/http"
 	"testing"
+	wb "webdav-cli/pkg/webdav"
 )
 
-func TestCheckDirOrFileIsExist(t *testing.T) {
-	_, err := os.Stat("/tmp")
-	// fmt.Println(os.IsExist(err))
-	fmt.Println(os.IsNotExist(err))
+func TestCmd(t *testing.T) {
+	vars.Client = wb.InitClient(&http.Client{}, "", "", "")
+	vars.recursive = true
+	downloadFunc(context.Background(), "", "")
 }

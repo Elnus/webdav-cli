@@ -83,16 +83,28 @@ func checkCountFlags(cmd *cobra.Command, arg string) time.Duration {
 
 func checkLocalIsNotExist(ctx context.Context, name string) bool {
 	if _, err := webdav.LocalFileSystem("/").Stat(ctx, name); err != nil {
-		log.Println(fmt.Errorf("local stat:%w", err))
+		log.Println(fmt.Errorf("Root:Local Item Is Not Exist:%w", err))
 		return true
 	}
 	return false
 }
 
+func makeLocalDir(ctx context.Context, path string) {
+	if err := webdav.LocalFileSystem("/").Mkdir(ctx, path); err != nil {
+		log.Fatal(fmt.Errorf("Root:Make Local Dir Err:%w", err))
+	}
+}
+
 func checkRemoteIsNotExist(ctx context.Context, name string) bool {
 	if _, err := vars.Client.Stat(ctx, name); err != nil {
-		log.Println(fmt.Errorf("remote stat:%w", err))
+		log.Println(fmt.Errorf("Root:Remote Item Is Not Exist:%w", err))
 		return true
 	}
 	return false
+}
+
+func makeRemoteDir(ctx context.Context, path string) {
+	if err := vars.Client.Mkdir(ctx, path); err != nil {
+		log.Fatal(fmt.Errorf("Root:Make Remote Dir Err:%w", err))
+	}
 }
