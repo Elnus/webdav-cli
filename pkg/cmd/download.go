@@ -80,7 +80,6 @@ func newReadDir(ctx context.Context, c *webdav.Client, path string, recurse bool
 				res = append(res, newReadDir(ctx, c, v.Path, recurse)...)
 			}
 		}
-		//fmt.Printf("res:%v\n", res)
 		return res
 	}
 	return items

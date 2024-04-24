@@ -58,8 +58,8 @@ func uploadFunc(ctx context.Context, ld, rd string) {
 	}
 }
 
-func uploadFile(ctx context.Context, path, name string) {
-	localFile, err := webdav.LocalFileSystem("/").Open(ctx, name)
+func uploadFile(ctx context.Context, rItemPath, lItemPath string) {
+	localFile, err := webdav.LocalFileSystem("/").Open(ctx, lItemPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Open Local File Err:%w", err))
 	}
@@ -67,7 +67,7 @@ func uploadFile(ctx context.Context, path, name string) {
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Read Local File Err:%w", err))
 	}
-	r, err := vars.Client.Create(ctx, path)
+	r, err := vars.Client.Create(ctx, rItemPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Create Remote File Err:%w", err))
 	}

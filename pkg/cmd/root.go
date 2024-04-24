@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 	wb "webdav-cli/pkg/webdav"
 
@@ -107,4 +108,12 @@ func makeRemoteDir(ctx context.Context, path string) {
 	if err := vars.Client.Mkdir(ctx, path); err != nil {
 		log.Fatal(fmt.Errorf("Root:Make Remote Dir Err:%w", err))
 	}
+}
+
+func unifiedPath(oldStr, path string) string {
+	if str := string(oldStr[len(oldStr)-1]); str == "/" {
+		oldStr = oldStr[0 : len(oldStr)-1]
+	}
+	rootPath := strings.Replace(path, oldStr, "", 1)
+	return rootPath
 }
