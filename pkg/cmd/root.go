@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 	wb "webdav-cli/pkg/webdav"
@@ -91,8 +92,13 @@ func checkLocalIsNotExist(ctx context.Context, name string) bool {
 }
 
 func makeLocalDir(ctx context.Context, path string) {
-	if err := webdav.LocalFileSystem("/").Mkdir(ctx, path); err != nil {
-		log.Fatal(fmt.Errorf("Root:Make Local Dir Err:%w", err))
+	select {
+	case <-ctx.Done():
+		return
+	default:
+		if err := os.MkdirAll(path, 0666); err != nil {
+			log.Fatal(fmt.Errorf("Root:Make Local Dir Err:%w", err))
+		}
 	}
 }
 
