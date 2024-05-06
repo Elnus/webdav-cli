@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/emersion/go-webdav"
@@ -59,7 +60,7 @@ func uploadFunc(ctx context.Context, ld, rd string) {
 }
 
 func uploadFile(ctx context.Context, rItemPath, lItemPath string) {
-	localFile, err := webdav.LocalFileSystem("/").Open(ctx, lItemPath)
+	localFile, err := os.Open(lItemPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Open Local File Err:%w", err))
 	}
