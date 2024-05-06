@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 )
@@ -16,10 +15,7 @@ var listCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), vars.timeout)
 		defer cancel()
 
-		res, err := vars.Client.ReadDir(ctx, vars.remoteDir, vars.recursive)
-		if err != nil {
-			log.Fatal(fmt.Errorf("List:List Remote Item Err:%w", err))
-		}
+		res := ReadDir(ctx, vars.Client, vars.remoteDir, vars.recursive)
 
 		fmt.Println("----------------------------")
 		for _, v := range res {

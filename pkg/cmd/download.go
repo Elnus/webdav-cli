@@ -26,7 +26,7 @@ func init() {
 }
 
 func downloadFunc(ctx context.Context, ld, rd string) {
-	res := newReadDir(ctx, vars.Client, rd, vars.recursive)
+	res := ReadDir(ctx, vars.Client, rd, vars.recursive)
 	for _, v := range res {
 		lItemPath := fmt.Sprintf("%s%s", ld, v.Path)
 		switch v.IsDir {
@@ -63,21 +63,21 @@ func downloadFile(ctx context.Context, lItemPath, rItemPath string) {
 	defer osFile.Close()
 }
 
-func newReadDir(ctx context.Context, c *webdav.Client, path string, recurse bool) []webdav.FileInfo {
-	var res []webdav.FileInfo
+func ReadDir(ctx context.Context, c *webdav.Client, path string, recurse bool) []webdav.FileInfo {
 	items, err := c.ReadDir(ctx, path, false)
-	res = append(res, items[0])
 	if err != nil {
 		log.Fatal(fmt.Errorf("DownLoad:List Local Item Err:%w", err))
 	}
 	if recurse {
+		var res []webdav.FileInfo
+		res = append(res, items[0])
 		for _, v := range items {
 			if !v.IsDir {
 				res = append(res, v)
 				continue
 			}
-			if v.IsDir && v.Path != path {
-				res = append(res, newReadDir(ctx, c, v.Path, recurse)...)
+			if v.Path != path {
+				res = append(res, ReadDir(ctx, c, v.Path, recurse)...)
 			}
 		}
 		return res

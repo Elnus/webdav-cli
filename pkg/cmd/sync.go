@@ -39,7 +39,7 @@ var syncCmd = &cobra.Command{
 		// 列出所有远程路径
 		rtMap := make(map[string]webdav.FileInfo)
 		go func() {
-			remoteItems := newReadDir(ctx, vars.Client, vars.remoteDir, vars.recursive)
+			remoteItems := ReadDir(ctx, vars.Client, vars.remoteDir, vars.recursive)
 			for _, v := range remoteItems {
 				rootPath := unifiedPath(vars.remoteDir, v.Path)
 				rtMap[rootPath] = v
