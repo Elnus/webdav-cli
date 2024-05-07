@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/emersion/go-webdav"
@@ -27,15 +30,16 @@ func init() {
 }
 
 func splitStr(path string) string {
-	if !strings.HasSuffix(path, "/") {
-		path = path + "/"
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Upload:Get Abs Path Err:%w", err))
 	}
-	str := strings.Split(path, "/")
+	str := strings.Split(absPath+string(os.PathSeparator), string(os.PathSeparator))
 	return str[len(str)-2]
 }
 
 func uploadFunc(ctx context.Context, ld, rd string) {
-	items, err := webdav.LocalFileSystem("/").ReadDir(ctx, ld, vars.recursive)
+	items, err := readLDir(ctx, ld, vars.recursive)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:List Remote Item Err:%w", err))
 	}
@@ -44,7 +48,7 @@ func uploadFunc(ctx context.Context, ld, rd string) {
 		_, subPath, _ := strings.Cut(v.Path, splitStr(basePath))
 		switch v.IsDir {
 		case true:
-			dirPath := basePath + subPath + "/"
+			dirPath := basePath + subPath + string(os.PathSeparator)
 			if !checkRemoteIsNotExist(ctx, dirPath) {
 				continue
 			}
@@ -59,7 +63,7 @@ func uploadFunc(ctx context.Context, ld, rd string) {
 }
 
 func uploadFile(ctx context.Context, rItemPath, lItemPath string) {
-	localFile, err := webdav.LocalFileSystem("/").Open(ctx, lItemPath)
+	localFile, err := os.Open(lItemPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Open Local File Err:%w", err))
 	}
@@ -76,4 +80,21 @@ func uploadFile(ctx context.Context, rItemPath, lItemPath string) {
 		log.Fatal(fmt.Errorf("Upload:Write Remote File Err:%w", err))
 	}
 	defer r.Close()
+}
+
+func readLDir(ctx context.Context, path string, recurse bool) ([]webdav.FileInfo, error) {
+	var fi []webdav.FileInfo
+	var depth int = 0
+	if recurse {
+		depth = 63
+	}
+	rootDepth := strings.Count(path, string(os.PathSeparator))
+	err := filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
+		if strings.Count(path, string(os.PathSeparator)) > depth+rootDepth {
+			return filepath.SkipDir
+		}
+		fi = append(fi, webdav.FileInfo{Path: path, ModTime: info.ModTime(), IsDir: info.IsDir()})
+		return err
+	})
+	return fi, err
 }

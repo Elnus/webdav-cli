@@ -44,7 +44,7 @@ func Exec() {
 	rootCmd.PersistentFlags().StringVarP(&vars.server, "server", "s", "", "webdav host ip")
 	rootCmd.PersistentFlags().StringVarP(&vars.localDir, "local-dir", "l", "", "local directories that need to be synchronized")
 	rootCmd.PersistentFlags().StringVarP(&vars.remoteDir, "remote-dir", "r", "", "remote server sync directory")
-	rootCmd.PersistentFlags().StringVarP(&vars.config, "config-file", "c", "", "read config from yaml file")
+	// rootCmd.PersistentFlags().StringVarP(&vars.config, "config-file", "c", "", "read config from yaml file")
 	rootCmd.PersistentFlags().StringVarP(&vars.usr, "username", "u", "", "username of logon webdav server")
 	rootCmd.PersistentFlags().StringVarP(&vars.pwd, "password", "p", "", "password of logon webdav server")
 	rootCmd.PersistentFlags().DurationP("timeout", "t", 30*time.Second, "timeout in seconds")
@@ -84,11 +84,16 @@ func checkCountFlags(cmd *cobra.Command, arg string) time.Duration {
 }
 
 func checkLocalIsNotExist(ctx context.Context, name string) bool {
-	if _, err := webdav.LocalFileSystem("/").Stat(ctx, name); err != nil {
-		log.Println(fmt.Errorf("Root:Local Item Is Not Exist:%w", err))
-		return true
+	select {
+	case <-ctx.Done():
+		return false
+	default:
+		_, err := os.Stat(name)
+		if err != nil {
+			log.Println(fmt.Errorf("Root:Local Item Is Not Exist:%w", err))
+		}
+		return !os.IsNotExist(err)
 	}
-	return false
 }
 
 func makeLocalDir(ctx context.Context, path string) {
