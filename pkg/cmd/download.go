@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 
 	"github.com/emersion/go-webdav"
 	"github.com/spf13/cobra"
@@ -26,7 +27,7 @@ func init() {
 }
 
 func downloadFunc(ctx context.Context, ld, rd string) {
-	res := ReadDir(ctx, vars.Client, rd, vars.recursive)
+	res := readRDir(ctx, vars.Client, rd, vars.recursive)
 	for _, v := range res {
 		lItemPath := fmt.Sprintf("%s%s", ld, v.Path)
 		switch v.IsDir {
@@ -52,7 +53,7 @@ func downloadFile(ctx context.Context, lItemPath, rItemPath string) {
 	if err != nil {
 		log.Fatal(fmt.Errorf("DownLoad:Read Remote File Err:%w", err))
 	}
-	osFile, err := webdav.LocalFileSystem("/").Create(ctx, lItemPath)
+	osFile, err := os.Create(lItemPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("DownLoad:Create local File Err:%w", err))
 	}
@@ -63,7 +64,7 @@ func downloadFile(ctx context.Context, lItemPath, rItemPath string) {
 	defer osFile.Close()
 }
 
-func ReadDir(ctx context.Context, c *webdav.Client, path string, recurse bool) []webdav.FileInfo {
+func readRDir(ctx context.Context, c *webdav.Client, path string, recurse bool) []webdav.FileInfo {
 	items, err := c.ReadDir(ctx, path, false)
 	if err != nil {
 		log.Fatal(fmt.Errorf("DownLoad:List Local Item Err:%w", err))
@@ -77,7 +78,7 @@ func ReadDir(ctx context.Context, c *webdav.Client, path string, recurse bool) [
 				continue
 			}
 			if v.Path != path {
-				res = append(res, ReadDir(ctx, c, v.Path, recurse)...)
+				res = append(res, readRDir(ctx, c, v.Path, recurse)...)
 			}
 		}
 		return res

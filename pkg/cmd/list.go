@@ -15,7 +15,7 @@ var listCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), vars.timeout)
 		defer cancel()
 
-		res := ReadDir(ctx, vars.Client, vars.remoteDir, vars.recursive)
+		res := readRDir(ctx, vars.Client, vars.remoteDir, vars.recursive)
 
 		fmt.Println("----------------------------")
 		for _, v := range res {
