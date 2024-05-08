@@ -66,16 +66,14 @@ func uploadFile(ctx context.Context, rItemPath, lItemPath string) {
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Open Local File Err:%w", err))
 	}
-	data, err := io.ReadAll(localFile)
-	if err != nil {
-		log.Fatal(fmt.Errorf("Upload:Read Local File Err:%w", err))
-	}
+
 	r, err := vars.Client.Create(ctx, rItemPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Create Remote File Err:%w", err))
 	}
 	defer r.Close()
-	_, err = r.Write(data)
+
+	_, err = io.Copy(r, localFile)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Write Remote File Err:%w", err))
 	}
