@@ -49,10 +49,9 @@ func uploadFunc(ctx context.Context, ld, rd string) {
 		switch v.IsDir {
 		case true:
 			dirPath := basePath + subPath + string(os.PathSeparator)
-			if !checkRemoteIsNotExist(ctx, dirPath) {
-				continue
+			if checkRemoteIsNotExist(ctx, dirPath) {
+				makeRemoteDir(ctx, dirPath)
 			}
-			makeRemoteDir(ctx, dirPath)
 		case false:
 			filePath := basePath + subPath
 			if checkRemoteIsNotExist(ctx, filePath) || vars.overwrite {
@@ -75,11 +74,11 @@ func uploadFile(ctx context.Context, rItemPath, lItemPath string) {
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Create Remote File Err:%w", err))
 	}
+	defer r.Close()
 	_, err = r.Write(data)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Write Remote File Err:%w", err))
 	}
-	defer r.Close()
 }
 
 func readLDir(ctx context.Context, path string, recurse bool) ([]webdav.FileInfo, error) {

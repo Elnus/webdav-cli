@@ -49,19 +49,17 @@ func downloadFile(ctx context.Context, lItemPath, rItemPath string) {
 		log.Fatal(fmt.Errorf("DownLoad:Open Remote File Err:%w", err))
 	}
 	defer file.Close()
-	data, err := io.ReadAll(file)
-	if err != nil {
-		log.Fatal(fmt.Errorf("DownLoad:Read Remote File Err:%w", err))
-	}
+
 	osFile, err := os.Create(lItemPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("DownLoad:Create local File Err:%w", err))
 	}
-	_, err = osFile.Write(data)
+	defer osFile.Close()
+
+	_, err = io.Copy(osFile, file)
 	if err != nil {
 		log.Fatal(fmt.Errorf("DownLoad:Write Local File Err:%w", err))
 	}
-	defer osFile.Close()
 }
 
 func readRDir(ctx context.Context, c *webdav.Client, path string, recurse bool) []webdav.FileInfo {
