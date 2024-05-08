@@ -27,8 +27,7 @@ func init() {
 }
 
 func downloadFunc(ctx context.Context, ld, rd string) {
-	res := readRDir(ctx, vars.Client, rd, vars.recursive)
-	for _, v := range res {
+	for _, v := range readRDir(ctx, vars.Client, rd, vars.recursive) {
 		lItemPath := fmt.Sprintf("%s%s", ld, v.Path)
 		switch v.IsDir {
 		case true:

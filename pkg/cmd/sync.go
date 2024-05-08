@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"context"
-	"log"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/emersion/go-webdav"
@@ -23,12 +23,8 @@ var syncCmd = &cobra.Command{
 		// 列出所有本地文件
 		ltMap := make(map[string]webdav.FileInfo)
 		go func() {
-			localItems, err := readLDir(ctx, vars.localDir, vars.recursive)
-			if err != nil {
-				log.Fatal(err)
-			}
-			for _, v := range localItems {
-				rootPath := unifiedPath(vars.localDir, v.Path)
+			for _, v := range readLDir(ctx, vars.localDir, vars.recursive) {
+				_, rootPath, _ := strings.Cut(v.Path, vars.localDir)
 				if v.IsDir {
 					rootPath = rootPath + string(os.PathSeparator)
 				}
@@ -40,9 +36,8 @@ var syncCmd = &cobra.Command{
 		// 列出所有远程路径
 		rtMap := make(map[string]webdav.FileInfo)
 		go func() {
-			remoteItems := readRDir(ctx, vars.Client, vars.remoteDir, vars.recursive)
-			for _, v := range remoteItems {
-				rootPath := unifiedPath(vars.remoteDir, v.Path)
+			for _, v := range readRDir(ctx, vars.Client, vars.remoteDir, vars.recursive) {
+				_, rootPath, _ := strings.Cut(v.Path, vars.remoteDir)
 				rtMap[rootPath] = v
 			}
 			readWg.Done()
