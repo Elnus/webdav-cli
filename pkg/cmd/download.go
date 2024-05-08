@@ -18,7 +18,9 @@ var downloadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithTimeout(context.Background(), vars.timeout)
 		defer cancel()
-		downloadFunc(ctx, vars.localDir, vars.remoteDir)
+		for _, v := range readRDir(ctx, vars.Client, vars.remoteDir, vars.recursive) {
+			downloadFunc(ctx, vars.localDir, vars.remoteDir, v)
+		}
 	},
 }
 
@@ -26,18 +28,16 @@ func init() {
 	rootCmd.AddCommand(downloadCmd)
 }
 
-func downloadFunc(ctx context.Context, ld, rd string) {
-	for _, v := range readRDir(ctx, vars.Client, rd, vars.recursive) {
-		lItemPath := fmt.Sprintf("%s%s", ld, v.Path)
-		switch v.IsDir {
-		case true:
-			if checkLocalIsNotExist(ctx, lItemPath) {
-				makeLocalDir(ctx, lItemPath)
-			}
-		case false:
-			if checkLocalIsNotExist(ctx, lItemPath) || vars.overwrite {
-				downloadFile(ctx, lItemPath, v.Path)
-			}
+func downloadFunc(ctx context.Context, ld, rd string, v webdav.FileInfo) {
+	lItemPath := fmt.Sprintf("%s%s", ld, v.Path)
+	switch v.IsDir {
+	case true:
+		if checkLocalIsNotExist(ctx, lItemPath) {
+			makeLocalDir(ctx, lItemPath)
+		}
+	case false:
+		if checkLocalIsNotExist(ctx, lItemPath) || vars.overwrite {
+			downloadFile(ctx, lItemPath, v.Path)
 		}
 	}
 }

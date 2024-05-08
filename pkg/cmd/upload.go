@@ -21,7 +21,9 @@ var uploadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithTimeout(context.Background(), vars.timeout)
 		defer cancel()
-		uploadFunc(ctx, vars.localDir, vars.remoteDir)
+		for _, v := range readLDir(ctx, vars.localDir, vars.recursive) {
+			uploadFunc(ctx, vars.localDir, vars.remoteDir, v)
+		}
 	},
 }
 
@@ -29,20 +31,18 @@ func init() {
 	rootCmd.AddCommand(uploadCmd)
 }
 
-func uploadFunc(ctx context.Context, ld, rd string) {
-	for _, v := range readLDir(ctx, ld, vars.recursive) {
-		_, subPath, _ := strings.Cut(v.Path, ld)
-		switch v.IsDir {
-		case true:
-			rItemPath := rd + subPath + string(os.PathSeparator)
-			if checkRemoteIsNotExist(ctx, rItemPath) {
-				makeRemoteDir(ctx, rItemPath)
-			}
-		case false:
-			rItemPath := rd + subPath
-			if checkRemoteIsNotExist(ctx, rItemPath) || vars.overwrite {
-				uploadFile(ctx, rItemPath, v.Path)
-			}
+func uploadFunc(ctx context.Context, ld, rd string, v webdav.FileInfo) {
+	_, subPath, _ := strings.Cut(v.Path, ld)
+	switch v.IsDir {
+	case true:
+		rItemPath := rd + subPath + string(os.PathSeparator)
+		if checkRemoteIsNotExist(ctx, rItemPath) {
+			makeRemoteDir(ctx, rItemPath)
+		}
+	case false:
+		rItemPath := rd + subPath
+		if checkRemoteIsNotExist(ctx, rItemPath) || vars.overwrite {
+			uploadFile(ctx, rItemPath, v.Path)
 		}
 	}
 }
