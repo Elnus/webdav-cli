@@ -27,14 +27,6 @@ var rootCmd = &cobra.Command{
 	Short: "",
 	Long:  "webdav-cli is a cli tools to sync to webdav server",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		vars.usr = checkStringFlags(cmd, "username")
-		vars.pwd = checkStringFlags(cmd, "password")
-		vars.server = checkStringFlags(cmd, "server")
-		vars.remoteDir = checkStringFlags(cmd, "remote-dir")
-		vars.localDir = checkStringFlags(cmd, "local-dir")
-		vars.overwrite = checkBoolFlags(cmd, "overwrite")
-		vars.recursive = checkBoolFlags(cmd, "recursive")
-		vars.timeout = checkCountFlags(cmd, "timeout")
 		vars.Client = wb.InitClient(&http.Client{}, vars.server, vars.usr, vars.pwd)
 	},
 }
@@ -46,40 +38,14 @@ func Exec() {
 	// rootCmd.PersistentFlags().StringVarP(&vars.config, "config-file", "c", "", "read config from yaml file")
 	rootCmd.PersistentFlags().StringVarP(&vars.usr, "username", "u", "", "username of logon webdav server")
 	rootCmd.PersistentFlags().StringVarP(&vars.pwd, "password", "p", "", "password of logon webdav server")
-	rootCmd.PersistentFlags().DurationP("timeout", "t", 30*time.Second, "timeout in seconds")
-	rootCmd.PersistentFlags().Bool("overwrite", false, "ignore the files with the same name between localdir and remotedir")
-	rootCmd.PersistentFlags().Bool("recursive", false, "recursively all directory files")
+	rootCmd.PersistentFlags().DurationVarP(&vars.timeout, "timeout", "t", 30*time.Second, "timeout in seconds")
+	rootCmd.PersistentFlags().BoolVar(&vars.overwrite, "overwrite", false, "ignore the files with the same name between localdir and remotedir")
+	rootCmd.PersistentFlags().BoolVar(&vars.recursive, "recursive", false, "recursively all directory files")
 	err := rootCmd.Execute()
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-}
-
-func checkStringFlags(cmd *cobra.Command, arg string) string {
-	res, err := cmd.Flags().GetString(arg)
-	if err != nil {
-		log.Fatal(err)
-		return ""
-	}
-	return res
-}
-
-func checkBoolFlags(cmd *cobra.Command, arg string) bool {
-	res, err := cmd.Flags().GetBool(arg)
-	if err != nil {
-		log.Fatal(err)
-		return false
-	}
-	return res
-}
-
-func checkCountFlags(cmd *cobra.Command, arg string) time.Duration {
-	res, err := cmd.Flags().GetDuration(arg)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return res
 }
 
 func checkLocalIsNotExist(ctx context.Context, name string) bool {
