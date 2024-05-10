@@ -21,7 +21,9 @@ var uploadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithTimeout(context.Background(), vars.timeout)
 		defer cancel()
-		uploadFunc(ctx, vars.localDir, vars.remoteDir)
+		for _, v := range readLDir(ctx, vars.localDir, vars.recursive) {
+			uploadFunc(ctx, vars.localDir, vars.remoteDir, v)
+		}
 	},
 }
 
@@ -29,35 +31,18 @@ func init() {
 	rootCmd.AddCommand(uploadCmd)
 }
 
-func splitStr(path string) string {
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		log.Fatal(fmt.Errorf("Upload:Get Abs Path Err:%w", err))
-	}
-	str := strings.Split(absPath+string(os.PathSeparator), string(os.PathSeparator))
-	return str[len(str)-2]
-}
-
-func uploadFunc(ctx context.Context, ld, rd string) {
-	items, err := readLDir(ctx, ld, vars.recursive)
-	if err != nil {
-		log.Fatal(fmt.Errorf("Upload:List Remote Item Err:%w", err))
-	}
-	basePath := rd + splitStr(ld)
-	for _, v := range items {
-		_, subPath, _ := strings.Cut(v.Path, splitStr(basePath))
-		switch v.IsDir {
-		case true:
-			dirPath := basePath + subPath + string(os.PathSeparator)
-			if !checkRemoteIsNotExist(ctx, dirPath) {
-				continue
-			}
-			makeRemoteDir(ctx, dirPath)
-		case false:
-			filePath := basePath + subPath
-			if checkRemoteIsNotExist(ctx, filePath) || vars.overwrite {
-				uploadFile(ctx, filePath, v.Path)
-			}
+func uploadFunc(ctx context.Context, ld, rd string, v webdav.FileInfo) {
+	_, subPath, _ := strings.Cut(v.Path, ld)
+	switch v.IsDir {
+	case true:
+		rItemPath := rd + subPath + string(os.PathSeparator)
+		if checkRemoteIsNotExist(ctx, rItemPath) {
+			makeRemoteDir(ctx, rItemPath)
+		}
+	case false:
+		rItemPath := rd + subPath
+		if checkRemoteIsNotExist(ctx, rItemPath) || vars.overwrite {
+			uploadFile(ctx, rItemPath, v.Path)
 		}
 	}
 }
@@ -67,22 +52,20 @@ func uploadFile(ctx context.Context, rItemPath, lItemPath string) {
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Open Local File Err:%w", err))
 	}
-	data, err := io.ReadAll(localFile)
-	if err != nil {
-		log.Fatal(fmt.Errorf("Upload:Read Local File Err:%w", err))
-	}
+
 	r, err := vars.Client.Create(ctx, rItemPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Create Remote File Err:%w", err))
 	}
-	_, err = r.Write(data)
+	defer r.Close()
+
+	_, err = io.Copy(r, localFile)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Upload:Write Remote File Err:%w", err))
 	}
-	defer r.Close()
 }
 
-func readLDir(ctx context.Context, path string, recurse bool) ([]webdav.FileInfo, error) {
+func readLDir(ctx context.Context, path string, recurse bool) []webdav.FileInfo {
 	var fi []webdav.FileInfo
 	var depth int = 0
 	if recurse {
@@ -96,5 +79,8 @@ func readLDir(ctx context.Context, path string, recurse bool) ([]webdav.FileInfo
 		fi = append(fi, webdav.FileInfo{Path: path, ModTime: info.ModTime(), IsDir: info.IsDir()})
 		return err
 	})
-	return fi, err
+	if err != nil {
+		log.Fatal(fmt.Errorf("Upload:List Remote Item Err:%w", err))
+	}
+	return fi
 }

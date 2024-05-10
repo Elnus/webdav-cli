@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 	wb "webdav-cli/pkg/webdav"
 
@@ -109,7 +108,7 @@ func makeLocalDir(ctx context.Context, path string) {
 
 func checkRemoteIsNotExist(ctx context.Context, name string) bool {
 	if _, err := vars.Client.Stat(ctx, name); err != nil {
-		log.Println(fmt.Errorf("Root:Remote Item Is Not Exist:%w", err))
+		log.Println(fmt.Errorf("Root:Remote Item Is Not Exist:%s", "Create File"))
 		return true
 	}
 	return false
@@ -119,12 +118,4 @@ func makeRemoteDir(ctx context.Context, path string) {
 	if err := vars.Client.Mkdir(ctx, path); err != nil {
 		log.Fatal(fmt.Errorf("Root:Make Remote Dir Err:%w", err))
 	}
-}
-
-func unifiedPath(oldStr, path string) string {
-	if str := string(oldStr[len(oldStr)-1]); str == "/" {
-		oldStr = oldStr[0 : len(oldStr)-1]
-	}
-	rootPath := strings.Replace(path, oldStr, "", 1)
-	return rootPath
 }
