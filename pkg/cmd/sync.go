@@ -23,6 +23,7 @@ var syncCmd = &cobra.Command{
 		// 列出所有本地文件
 		ltMap := make(map[string]webdav.FileInfo)
 		go func() {
+			defer readWg.Done()
 			for _, v := range readLDir(ctx, vars.localDir, vars.recursive) {
 				_, rootPath, _ := strings.Cut(v.Path, vars.localDir)
 				if v.IsDir {
@@ -30,35 +31,35 @@ var syncCmd = &cobra.Command{
 				}
 				ltMap[rootPath] = v
 			}
-			readWg.Done()
 		}()
 
 		// 列出所有远程路径
 		rtMap := make(map[string]webdav.FileInfo)
 		go func() {
+			defer readWg.Done()
 			for _, v := range readRDir(ctx, vars.Client, vars.remoteDir, vars.recursive) {
 				_, rootPath, _ := strings.Cut(v.Path, vars.remoteDir)
 				rtMap[rootPath] = v
 			}
-			readWg.Done()
 		}()
 		readWg.Wait()
 
 		var checkWg sync.WaitGroup
 		checkWg.Add(2)
 		downList := make(map[string]string)
-		upList := make(map[string]string)
+		uploadList := make(map[string]string)
 
 		go func() {
+			defer checkWg.Done()
 			for i, v := range ltMap {
 				if value, exists := rtMap[i]; !exists {
 					if !v.IsDir {
-						upList[(vars.remoteDir + i)] = v.Path
+						uploadList[(vars.remoteDir + i)] = v.Path
 					}
 				} else {
 					if !v.IsDir && vars.overwrite {
 						if v.ModTime.After(value.ModTime) {
-							upList[(vars.remoteDir + i)] = v.Path
+							uploadList[(vars.remoteDir + i)] = v.Path
 						}
 						if v.ModTime.Before(value.ModTime) {
 							downList[v.Path] = (vars.remoteDir + i)
@@ -66,37 +67,34 @@ var syncCmd = &cobra.Command{
 					}
 				}
 			}
-			checkWg.Done()
 		}()
 		go func() {
+			defer checkWg.Done()
 			for i, v := range rtMap {
 				if _, exists := ltMap[i]; !exists {
 					if v.IsDir {
 						makeLocalDir(ctx, (vars.localDir + i))
-						continue
-					}
-					if !v.IsDir {
+					} else {
 						downList[vars.localDir+i] = v.Path
 					}
 				}
 			}
-			checkWg.Done()
 		}()
 		checkWg.Wait()
 
 		var actWg sync.WaitGroup
 		actWg.Add(2)
 		go func() {
+			defer actWg.Done()
 			for i, v := range downList {
 				downloadFile(ctx, i, v)
 			}
-			actWg.Done()
 		}()
 		go func() {
-			for i, v := range upList {
+			defer actWg.Done()
+			for i, v := range uploadList {
 				uploadFile(ctx, i, v)
 			}
-			actWg.Done()
 		}()
 		actWg.Wait()
 	},
