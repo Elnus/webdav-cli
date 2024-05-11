@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -46,23 +47,23 @@ var syncCmd = &cobra.Command{
 
 		var checkWg sync.WaitGroup
 		checkWg.Add(2)
-		downList := make(map[string]string)
-		uploadList := make(map[string]string)
+		downloadChan := make(chan [2]string, 100)
+		uploadChan := make(chan [2]string, 100)
 
 		go func() {
 			defer checkWg.Done()
 			for i, v := range ltMap {
 				if value, exists := rtMap[i]; !exists {
 					if !v.IsDir {
-						uploadList[(vars.remoteDir + i)] = v.Path
+						uploadChan <- [2]string{vars.remoteDir + i, v.Path}
 					}
 				} else {
 					if !v.IsDir && vars.overwrite {
 						if v.ModTime.After(value.ModTime) {
-							uploadList[(vars.remoteDir + i)] = v.Path
+							uploadChan <- [2]string{vars.remoteDir + i, v.Path}
 						}
 						if v.ModTime.Before(value.ModTime) {
-							downList[v.Path] = (vars.remoteDir + i)
+							downloadChan <- [2]string{v.Path, vars.remoteDir + i}
 						}
 					}
 				}
@@ -75,27 +76,41 @@ var syncCmd = &cobra.Command{
 					if v.IsDir {
 						makeLocalDir(ctx, (vars.localDir + i))
 					} else {
-						downList[vars.localDir+i] = v.Path
+						downloadChan <- [2]string{vars.localDir + i, v.Path}
 					}
 				}
 			}
 		}()
 		checkWg.Wait()
+		close(uploadChan)
+		close(downloadChan)
 
 		var actWg sync.WaitGroup
-		actWg.Add(2)
-		go func() {
-			defer actWg.Done()
-			for i, v := range downList {
-				downloadFile(ctx, i, v)
-			}
-		}()
-		go func() {
-			defer actWg.Done()
-			for i, v := range uploadList {
-				uploadFile(ctx, i, v)
-			}
-		}()
+		actWg.Add(2 * runtime.NumCPU())
+		for i := 0; i < runtime.NumCPU(); i++ {
+			go func() {
+				defer actWg.Done()
+				for {
+					if v, ok := <-downloadChan; ok {
+						downloadFile(ctx, v[0], v[1])
+					} else {
+						break
+					}
+				}
+			}()
+		}
+		for i := 0; i < runtime.NumCPU(); i++ {
+			go func() {
+				defer actWg.Done()
+				for {
+					if v, ok := <-uploadChan; ok {
+						uploadFile(ctx, v[0], v[1])
+					} else {
+						break
+					}
+				}
+			}()
+		}
 		actWg.Wait()
 	},
 }
