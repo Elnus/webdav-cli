@@ -74,7 +74,7 @@ func makeLocalDir(ctx context.Context, path string) {
 
 func checkRemoteIsNotExist(ctx context.Context, name string) bool {
 	if _, err := vars.Client.Stat(ctx, name); err != nil {
-		log.Println(fmt.Errorf("Root:Remote Item Is Not Exist:%s", "Create File"))
+		log.Printf("Root:%s Is Not Exist,Creating\n", name)
 		return true
 	}
 	return false

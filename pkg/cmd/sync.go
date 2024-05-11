@@ -47,8 +47,8 @@ var syncCmd = &cobra.Command{
 
 		var checkWg sync.WaitGroup
 		checkWg.Add(2)
-		downloadChan := make(chan [2]string, 10)
-		uploadChan := make(chan [2]string, 10)
+		downloadChan := make(chan [2]string, 100)
+		uploadChan := make(chan [2]string, 100)
 
 		go func() {
 			defer checkWg.Done()
